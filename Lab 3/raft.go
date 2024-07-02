@@ -351,15 +351,12 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 		SnapshotTerm:  rf.log[0].Term,
 		SnapshotIndex: rf.log[0].Index,
 	}
-	// fmt.Printf("*****apply msg %v install snapshot\n", msg)
-	rf.mu.Unlock()
 
-	rf.ApplyCh <- msg
-
-	rf.mu.Lock()
 	rf.snapshot = args.Data
 	rf.commitIndex = args.LastIncludeIndex
 	rf.lastApplied = rf.commitIndex
+
+	// fmt.Printf("*****apply msg %v install snapshot\n", msg)
 
 	reply.Term = rf.currentTerm
 
@@ -379,6 +376,8 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 	rf.persister.Save(raftState, rf.snapshot)
 
 	rf.mu.Unlock()
+
+	rf.ApplyCh <- msg
 }
 
 func (rf *Raft) sendInstallSnapshot(server int, args *InstallSnapshotArgs, reply *InstallSnapshotReply) bool {
@@ -1242,8 +1241,9 @@ func (rf *Raft) applyEntries() {
 
 				index := rf.getLogIndex(i)
 				if index <= 0 {
-					DPrintf("[applyEntries]:\t\t ID %d term %d State %s\t || \t index error! currentIndex %d index %d,current log %v",
-						rf.me, rf.currentTerm, state2name(rf.state), i, index, rf.log)
+					DPrintf("[applyEntries]:\t\t ID %d term %d State %s\t || \t "+
+						"index error! currentIndex %d index %d,current log %v,current lastApplied %d,current commitIndex %d,current i %d",
+						rf.me, rf.currentTerm, state2name(rf.state), i, index, rf.log, rf.lastApplied, rf.commitIndex, i)
 					log.Fatalf("apply entries error!")
 				}
 

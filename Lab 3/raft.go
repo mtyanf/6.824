@@ -218,7 +218,7 @@ func (rf *Raft) persist() {
 // restore previously persisted state.
 func (rf *Raft) readPersist(data []byte) {
 	defer func() {
-		DPrintf("[readPersist]:\t\t ID %d term %d State %s\t || \t "+
+		DPrintf("[readPersist]:\t\t\t ID %d term %d State %s\t || \t "+
 			"After readPersist : commitIndex %d, lastApplied %d,lastIncludeIndex %d,current log %v",
 			rf.me, rf.currentTerm, state2name(rf.state), rf.commitIndex, rf.lastApplied, rf.log[0].Index, rf.log)
 	}()
@@ -326,7 +326,7 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 		rf.persist()
 	}
 
-	if rf.log[0].Index >= args.LastIncludeIndex {
+	if rf.log[len(rf.log)-1].Index >= args.LastIncludeIndex {
 		reply.Term = rf.currentTerm
 
 		rf.mu.Unlock()
@@ -354,7 +354,7 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 
 	rf.snapshot = args.Data
 	rf.commitIndex = args.LastIncludeIndex
-	rf.lastApplied = rf.commitIndex
+	rf.lastApplied = args.LastIncludeIndex
 
 	// fmt.Printf("*****apply msg %v install snapshot\n", msg)
 
@@ -601,8 +601,8 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	defer rf.mu.Unlock()
 
 	defer func() {
-		DPrintf("[RequestVote]:\t\t ID %d term %d State %s\t || \t "+
-			"vote result %v,voted for %d, commitIndex %d, lastApplied %d,lastIncludeIndex %d, current log %v",
+		DPrintf("[RequestVote]:\t\t\t ID %d term %d State %s\t || \t "+
+			"After RequestVote, vote result %v,voted for %d, commitIndex %d, lastApplied %d,lastIncludeIndex %d, current log %v",
 			rf.me, rf.currentTerm, state2name(rf.state), reply.VoteGranted, rf.votedFor, rf.commitIndex, rf.lastApplied, rf.log[0].Index, rf.log)
 	}()
 
